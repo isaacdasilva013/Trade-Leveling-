@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Diário Simplificado de Vitórias</title>
+  <style>
+    body{margin:0;font-family:Arial,sans-serif;background:#e9e9e9;color:#222}
+    .tabs{display:flex;flex-wrap:wrap;position:sticky;top:0;background:#cad3ea;padding:.4rem;gap:.35rem}
+    .tab{padding:.45rem .7rem;border-radius:8px;border:1px solid #96a5c8;background:#7e8fb7;color:#fff;cursor:pointer;font-weight:700}
+    .tab.active{background:#fff;color:#1a1a1a}
+    .sheet{max-width:1000px;margin:.8rem auto;padding:.5rem}
+    table{width:100%;border-collapse:collapse;background:white}
+    th,td{border:1px solid #222;padding:.35rem;text-align:center}
+    th{background:#3f64ad;color:#fff}
+    .week{background:#88bf58;color:#fff;font-weight:700}
+    .sum{background:#dbe7d4;font-weight:700}
+    .month{display:none}
+    .month.active{display:block}
+  </style>
+</head>
+<body>
+  <div class="tabs" id="tabs"></div>
+  <div class="sheet" id="sheet"></div>
+
+  <script>
+    const months = ["MAIO","JUNHO","JULHO","AGOSTO","SETEMBRO","OUTUBRO","NOVEMBRO","DEZEMBRO"];
+
+    function bank(level){ return 10 * Math.pow(2, level - 1); }
+    function goal(level){ return Math.round(bank(level) * 0.2); }
+
+    const tabs = document.getElementById("tabs");
+    const sheet = document.getElementById("sheet");
+
+    months.forEach((m, idx) => {
+      const btn = document.createElement("button");
+      btn.className = "tab" + (idx===0 ? " active" : "");
+      btn.textContent = m;
+      btn.onclick = () => selectMonth(idx);
+      tabs.appendChild(btn);
+
+      const section = document.createElement("section");
+      section.className = "month" + (idx===0 ? " active" : "");
+
+      const baseLevel = idx * 4 + 1;
+      let html = `<h2>DIÁRIO SIMPLIFICADO - ${m}</h2>`;
+      html += `<table><thead><tr><th>DIA</th><th>DATA</th><th>ATIVO</th><th>ENTRADA</th><th>SAÍDA</th><th>WIN/LOSS</th><th>P/L</th></tr></thead><tbody>`;
+      for (let w=0; w<4; w++) {
+        const level = baseLevel + w;
+        html += `<tr class="week"><td colspan="7">SEMANA ${w+1} - NÍVEL ${level} | Banca: $${bank(level).toLocaleString('pt-BR')} | Meta: $${goal(level)}</td></tr>`;
+        for (let d=1; d<=5; d++) {
+          html += `<tr><td>DIA ${d}</td><td></td><td></td><td></td><td></td><td></td><td></td></tr>`;
+        }
+        html += `<tr class="sum"><td colspan="2">RESUMO SEMANA ${w+1}</td><td colspan="5"></td></tr>`;
+      }
+      html += `</tbody></table>`;
+      section.innerHTML = html;
+      sheet.appendChild(section);
+    });
+
+    function selectMonth(i){
+      [...document.querySelectorAll('.tab')].forEach((t,idx)=>t.classList.toggle('active', idx===i));
+      [...document.querySelectorAll('.month')].forEach((m,idx)=>m.classList.toggle('active', idx===i));
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,9 @@
+{
+  "cleanUrls": false,
+  "rewrites": [
+    { "source": "/", "destination": "/index.html" },
+    { "source": "/trading", "destination": "/Trading_Leveling_System.html" },
+    { "source": "/diario", "destination": "/Diario_Simplificado_Vitorias.html" },
+    { "source": "/guia", "destination": "/Guia_Preenchimento_Diario.md" }
+  ]
+}

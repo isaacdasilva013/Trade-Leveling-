@@ -108,54 +108,57 @@
     code {
       background: rgba(66, 113, 206, .2);
       border: 1px solid rgba(85, 144, 255, .35);
-      padding: .1rem .35rem;
-      border-radius: 6px;
-      color: #dbe8ff;
-    }
-
-    @media (max-width: 860px) {
-      .grid { grid-template-columns: 1fr; }
-    }
-  </style>
-</head>
-<body>
-  <main class="wrap">
-    <section class="hero">
-      <span class="tag">⚔️ SOLO LEVELING THEME</span>
-      <h1>Trade Leveling Hub</h1>
-      <p>Central de acesso rápido para o teu sistema gamificado de trading.</p>
-      <p>Abre uma ferramenta abaixo e acompanha tua progressão nível a nível.</p>
-
-      <section class="grid">
-        <article class="card">
-          <div>
-            <h2>📊 Trading Leveling System</h2>
-            <p>Painel interativo com nível, EXP, atributos, quests diárias e progresso salvo no navegador.</p>
-          </div>
-          <a class="btn" href="/Trading_Leveling_System.html">Abrir Painel</a>
-        </article>
-
-        <article class="card">
-          <div>
-            <h2>🗓️ Diário Simplificado</h2>
-            <p>Template mensal (Maio–Dezembro) com semanas, banca, meta diária e resumo por nível.</p>
-          </div>
-          <a class="btn" href="/Diario_Simplificado_Vitorias.html">Abrir Diário</a>
-        </article>
-
-        <article class="card">
-          <div>
-            <h2>📘 Guia de Preenchimento</h2>
-            <p>Manual em português com regras de progressão, colunas e boas práticas de journaling.</p>
-          </div>
-          <a class="btn" href="/Guia_Preenchimento_Diario.md">Abrir Guia</a>
-        </article>
-      </section>
-
-      <div class="hint">
-        Dica Vercel: também podes usar rotas curtas <code>/trading</code>, <code>/diario</code> e <code>/guia</code>.
-      </div>
-    </section>
-  </main>
-</body>
-</html>
+       padding: .1rem .35rem;
+       border-radius: 6px;
+       color: #dbe8ff;
+     }
+ 
+     @media (max-width: 860px) {
+       .grid { grid-template-columns: 1fr; }
+     }
+   </style>
+ </head>
+ <body>
+   <main class="wrap">
+     <section class="hero">
+       <span class="tag">⚔️ SOLO LEVELING THEME</span>
+       <h1>Trade Leveling Hub</h1>
+       <p>Central de acesso rápido para o teu sistema gamificado de trading.</p>
+       <p>Abre uma ferramenta abaixo e acompanha tua progressão nível a nível.</p>
+ 
+       <section class="grid">
+         <article class="card">
+           <div>
+             <h2>📊 Trading Leveling System</h2>
+             <p>Painel interativo com nível, EXP, atributos, quests diárias e progresso salvo no navegador.</p>
+           </div>
+-          <a class="btn" href="/Trading_Leveling_System.html">Abrir Painel</a>
++          <a class="btn" href="/trading">Abrir Painel</a>
+         </article>
+ 
+         <article class="card">
+           <div>
+             <h2>🗓️ Diário Simplificado</h2>
+             <p>Template por ranks (E até Nacional) com semanas, banca, meta diária e resumo por nível.</p>
+           </div>
+-          <a class="btn" href="/Diario_Simplificado_Vitorias.html">Abrir Diário</a>
++          <a class="btn" href="/diario">Abrir Diário</a>
+         </article>
+ 
+         <article class="card">
+           <div>
+             <h2>📘 Guia de Preenchimento</h2>
+             <p>Manual em português com regras de progressão, colunas e boas práticas de journaling.</p>
+           </div>
+-          <a class="btn" href="/Guia_Preenchimento_Diario.md">Abrir Guia</a>
++          <a class="btn" href="/guia">Abrir Guia</a>
+         </article>
+       </section>
+ 
+       <div class="hint">
+         Dica Vercel: também podes usar rotas curtas <code>/trading</code>, <code>/diario</code> e <code>/guia</code>.
+       </div>
+     </section>
+   </main>
+ </body>
+ </html>

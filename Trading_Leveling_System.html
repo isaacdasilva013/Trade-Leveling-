@@ -1,261 +1,538 @@
-<!doctype html>
-<html lang="pt-BR">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Trading Leveling System</title>
-  <style>
-    :root {
-      --bg: #060b1f;
-      --panel: #0d1738;
-      --card: #101f49;
-      --neon: #4dd8ff;
-      --gold: #f9d66e;
-      --ok: #6ce98c;
-      --danger: #ff6b8a;
-      --text: #e8f1ff;
-    }
-    * { box-sizing: border-box; }
-    body {
-      margin: 0;
-      font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
-      background: radial-gradient(circle at top, #11245f 0%, var(--bg) 45%);
-      color: var(--text);
-      min-height: 100vh;
-    }
-    .wrap { max-width: 980px; margin: 0 auto; padding: 1.2rem; }
-    .title { font-weight: 800; letter-spacing: .06em; color: var(--gold); text-transform: uppercase; }
-    .grid { display: grid; grid-template-columns: 1.1fr .9fr; gap: 1rem; }
-    .card {
-      background: linear-gradient(180deg, var(--card), #0a1432);
-      border: 1px solid rgba(77,216,255,.25);
-      border-radius: 16px;
-      padding: 1rem;
-      box-shadow: 0 0 30px rgba(77,216,255,.08) inset;
-    }
-    .stats { display:grid; grid-template-columns: repeat(3, 1fr); gap:.6rem; }
-    .stat { background: var(--panel); border-radius: 10px; padding:.7rem; border: 1px solid rgba(255,255,255,.08); }
-    .stat small { color:#a8c2ff; display:block; }
-    .stat strong { font-size:1.1rem; }
-    .bar { width:100%; height:14px; border-radius:999px; background:#09112b; border:1px solid rgba(255,255,255,.12); overflow:hidden; margin-top:.5rem; }
-    .fill { height:100%; background: linear-gradient(90deg, #4dd8ff, #6ce98c); width:0; transition:.35s; }
-    .attr { display:grid; grid-template-columns: repeat(2, 1fr); gap:.5rem; margin-top:.6rem; }
-    .quest {
-      display:flex; justify-content:space-between; align-items:center; gap:.5rem;
-      padding:.55rem .6rem; border-radius:10px; margin:.45rem 0; background:#0d1b42; border:1px solid rgba(255,255,255,.08);
-    }
-    .system-log {
-      margin-top: .9rem;
-      border: 1px solid rgba(77,216,255,.28);
-      border-radius: 12px;
-      background: #091434;
-      padding: .7rem;
-      max-height: 210px;
-      overflow-y: auto;
-    }
-    .msg {
-      margin: .35rem 0;
-      font-size: .9rem;
-      color: #bde6ff;
-      border-left: 3px solid #4dd8ff;
-      padding-left: .45rem;
-    }
-    button {
-      background: linear-gradient(120deg, #2f76ff, #35b7ff);
-      color:#fff; border:0; border-radius:10px; padding:.48rem .75rem; font-weight:700; cursor:pointer;
-    }
-    button[disabled] { opacity:.45; cursor:not-allowed; }
-    .row { display:flex; align-items:center; justify-content:space-between; gap:.6rem; }
-    .pill { padding:.2rem .5rem; border-radius:999px; font-size:.8rem; background:rgba(249,214,110,.16); color:var(--gold); border:1px solid rgba(249,214,110,.4); }
-    dialog {
-      border:none; border-radius:16px; padding:1.2rem; width:min(400px, 92vw);
-      background:#08122f; color:#e9f8ff; box-shadow:0 30px 80px rgba(0,0,0,.6);
-    }
-    dialog::backdrop { background: rgba(3,7,20,.78); }
-    @media (max-width: 820px) { .grid { grid-template-columns: 1fr; } .stats { grid-template-columns: repeat(2,1fr);} }
-  </style>
-</head>
-<body>
-  <div class="wrap">
-    <h1 class="title">⚔️ Trading Leveling System — Solo Mode</h1>
-    <div class="grid">
-      <section class="card">
-        <h2>📊 Status Panel</h2>
-        <div class="stats">
-          <div class="stat"><small>Nível</small><strong id="level">1</strong></div>
-          <div class="stat"><small>Capital</small><strong id="capital">$10</strong></div>
-          <div class="stat"><small>Win Rate</small><strong id="wr">0%</strong></div>
-          <div class="stat"><small>Wins na Semana</small><strong id="wins">0/5</strong></div>
-          <div class="stat"><small>Semanas Completas</small><strong id="weeks">0</strong></div>
-          <div class="stat"><small>Rank Atual</small><strong id="rank">Rank E</strong></div>
-        </div>
-        <div class="row" style="margin-top:.7rem"><span>EXP</span><span id="expTxt">0 / 100</span></div>
-        <div class="bar"><div class="fill" id="expFill"></div></div>
 
-        <h3>💪 Atributos</h3>
-        <div class="attr" id="attr"></div>
-      </section>
-
-      <section class="card">
-        <div class="row"><h2>🎯 Quests Diárias</h2><span class="pill" id="goal">Meta: $2/dia</span></div>
-        <div id="quests"></div>
-        <p style="color:#9bc2ff">Complete os 5 dias da semana para subir de nível. Cada conclusão rende EXP.</p>
-        <div>
-          <h3>📢 Mensagens do Sistema</h3>
-          <div class="system-log" id="sysLog"></div>
-        </div>
-        <button id="reset">Resetar progresso</button>
-      </section>
-    </div>
-  </div>
-
-  <dialog id="levelUp">
-    <h2>⬆️ LEVEL UP!</h2>
-    <p id="levelUpMsg"></p>
-    <button onclick="document.getElementById('levelUp').close()">Continuar</button>
-  </dialog>
-
-  <script>
-    const STORAGE = "solo_trading_rpg_v1";
-    const ranks = ["Rank E","Rank D","Rank C","Rank B","Rank A","Rank S","Rank Nacional"];
-    const baseCapital = 10;
-
-    const defaultState = {
-      level: 1,
-      exp: 0,
-      expToNext: 100,
-      winsWeek: 0,
-      totalWins: 0,
-      totalDays: 0,
-      weeksDone: 0,
-      attrs: { STR: 1, INT: 1, AGI: 1, VIT: 1 },
-      questsDone: [false, false, false, false, false],
-      messages: [],
-    };
-
-    const state = JSON.parse(localStorage.getItem(STORAGE) || "null") || defaultState;
-
-    const $ = (id) => document.getElementById(id);
-
-    function capitalForLevel(level) { return baseCapital * Math.pow(2, level - 1); }
-    function goalForLevel(level) { return Math.round(capitalForLevel(level) * 0.2); }
-    function currentRank(level) { return ranks[Math.min(ranks.length - 1, Math.floor((level - 1) / 4))]; }
-
-    function persist(){ localStorage.setItem(STORAGE, JSON.stringify(state)); }
-
-    function randomMessage(kind){
-      const map = {
-        quest: [
-          "Missão diária concluída! Continua firme, caçador.",
-          "Excelente execução! Disciplina gera evolução.",
-          "Objetivo diário cumprido. Mantém o foco!"
-        ],
-        week: [
-          "Semana perfeita! Você dominou este nível.",
-          "Parabéns! 5/5 tarefas concluídas com sucesso.",
-          "Grande consistência! O sistema reconhece sua evolução."
-        ],
-        level: [
-          "Subida de nível confirmada! Você está mais forte.",
-          "Parabéns, caçador! Novo nível desbloqueado.",
-          "Evolução concluída! Continue até o Rank Nacional."
-        ]
-      };
-      const options = map[kind] || ["Sistema atualizado com sucesso."];
-      return options[Math.floor(Math.random() * options.length)];
-    }
-
-    function addMessage(text){
-      state.messages = state.messages || [];
-      state.messages.unshift(`[${new Date().toLocaleTimeString("pt-BR", {hour: "2-digit", minute: "2-digit"})}] ${text}`);
-      state.messages = state.messages.slice(0, 20);
-    }
-
-    function gainExp(n){
-      state.exp += n;
-      while (state.exp >= state.expToNext) {
-        state.exp -= state.expToNext;
-        state.level += 1;
-        state.expToNext = Math.round(state.expToNext * 1.2);
-        Object.keys(state.attrs).forEach(k => state.attrs[k] += 1);
-        addMessage(`⬆️ ${randomMessage("level")} Agora você está no nível ${state.level}.`);
-        showLevelUp();
-      }
-    }
-
-    function completeQuest(dayIdx){
-      if (state.questsDone[dayIdx]) return;
-      state.questsDone[dayIdx] = true;
-      state.winsWeek += 1;
-      state.totalWins += 1;
-      state.totalDays += 1;
-      addMessage(`✅ Dia ${dayIdx + 1} concluído. ${randomMessage("quest")}`);
-      gainExp(20 + state.level * 3);
-
-      if (state.winsWeek >= 5) {
-        state.weeksDone += 1;
-        state.winsWeek = 0;
-        state.questsDone = [false, false, false, false, false];
-        addMessage(`🏆 ${randomMessage("week")} Próximo desafio: ${currentRank(state.level)}.`);
-        gainExp(40);
-      }
-      persist();
-      render();
-    }
-
-    function showLevelUp(){
-      $("levelUpMsg").textContent = `Você alcançou o nível ${state.level}. Todos os atributos +1!`;
-      $("levelUp").showModal();
-    }
-
-    function renderQuests(){
-      const el = $("quests");
-      el.innerHTML = "";
-      for (let i=0;i<5;i++) {
-        const row = document.createElement("div");
-        row.className = "quest";
-        const done = state.questsDone[i];
-        row.innerHTML = `<div>Dia ${i+1} ${done ? "✅" : "🟦"}</div>`;
-        const btn = document.createElement("button");
-        btn.textContent = done ? "Concluído" : "Completar";
-        btn.disabled = done;
-        btn.onclick = () => completeQuest(i);
-        row.appendChild(btn);
-        el.appendChild(row);
-      }
-    }
-
-    function renderAttrs(){
-      const el = $("attr");
-      el.innerHTML = Object.entries(state.attrs).map(([k,v]) =>
-        `<div class="stat"><small>${k}</small><strong>${v}</strong></div>`).join("");
-    }
-
-    function render(){
-      $("level").textContent = state.level;
-      $("capital").textContent = `$${capitalForLevel(state.level).toLocaleString("pt-BR")}`;
-      const wr = state.totalDays ? Math.round((state.totalWins/state.totalDays)*100) : 0;
-      $("wr").textContent = `${wr}%`;
-      $("wins").textContent = `${state.winsWeek}/5`;
-      $("weeks").textContent = state.weeksDone;
-      $("rank").textContent = currentRank(state.level);
-      $("goal").textContent = `Meta: $${goalForLevel(state.level)}/dia`;
-      $("expTxt").textContent = `${state.exp} / ${state.expToNext}`;
-      $("expFill").style.width = `${(state.exp / state.expToNext) * 100}%`;
-      renderAttrs();
-      renderQuests();
-      const log = $("sysLog");
-      const msgs = (state.messages && state.messages.length) ? state.messages : ["[Sistema] Bem-vindo! Complete as tarefas para evoluir no ranking."];
-      log.innerHTML = msgs.map(m => `<div class="msg">${m}</div>`).join("");
-    }
-
-    $("reset").onclick = () => {
-      if (!confirm("Tem certeza que deseja apagar o progresso?")) return;
-      localStorage.removeItem(STORAGE);
-      location.reload();
-    };
-
-    render();
-  </script>
-</body>
-</html>
+ <!doctype html>
+ <html lang="pt-BR">
+ <head>
+   <meta charset="UTF-8" />
+   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+-  <title>Trading Leveling System</title>
++  <title>Trading System - Solo Hunter</title>
+   <style>
+     :root {
+       --bg: #060b1f;
+-      --panel: #0d1738;
+-      --card: #101f49;
+-      --neon: #4dd8ff;
+-      --gold: #f9d66e;
+-      --ok: #6ce98c;
+-      --danger: #ff6b8a;
+-      --text: #e8f1ff;
++      --card: #0d1738;
++      --card2: #111f4d;
++      --line: rgba(88, 174, 255, 0.45);
++      --text: #e8f2ff;
++      --muted: #a9c6ff;
++      --ok: #77e99d;
++      --warn: #ff7f97;
++      --cyan: #4dd8ff;
++      --violet: #8c62ff;
++      --gold: #ffd780;
+     }
+     * { box-sizing: border-box; }
+     body {
+       margin: 0;
+-      font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+-      background: radial-gradient(circle at top, #11245f 0%, var(--bg) 45%);
+       color: var(--text);
++      background:
++        radial-gradient(900px 420px at 10% -10%, #1d3b92 0%, transparent 55%),
++        radial-gradient(900px 420px at 100% -20%, #2b1f6c 0%, transparent 55%),
++        linear-gradient(180deg, #081233, var(--bg));
+       min-height: 100vh;
++      font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+     }
+-    .wrap { max-width: 980px; margin: 0 auto; padding: 1.2rem; }
+-    .title { font-weight: 800; letter-spacing: .06em; color: var(--gold); text-transform: uppercase; }
+-    .grid { display: grid; grid-template-columns: 1.1fr .9fr; gap: 1rem; }
++    .wrap { max-width: 1050px; margin: 0 auto; padding: 1.1rem; }
++    .title { margin: 0 0 .8rem; letter-spacing: .04em; color: var(--gold); text-transform: uppercase; }
++    .grid { display: grid; grid-template-columns: 1.05fr .95fr; gap: .9rem; }
+     .card {
+-      background: linear-gradient(180deg, var(--card), #0a1432);
+-      border: 1px solid rgba(77,216,255,.25);
++      border: 1px solid var(--line);
+       border-radius: 16px;
+-      padding: 1rem;
+-      box-shadow: 0 0 30px rgba(77,216,255,.08) inset;
++      background: linear-gradient(180deg, var(--card2), var(--card));
++      padding: .95rem;
++      box-shadow: inset 0 0 38px rgba(72,147,255,.18);
+     }
+-    .stats { display:grid; grid-template-columns: repeat(3, 1fr); gap:.6rem; }
+-    .stat { background: var(--panel); border-radius: 10px; padding:.7rem; border: 1px solid rgba(255,255,255,.08); }
+-    .stat small { color:#a8c2ff; display:block; }
+-    .stat strong { font-size:1.1rem; }
+-    .bar { width:100%; height:14px; border-radius:999px; background:#09112b; border:1px solid rgba(255,255,255,.12); overflow:hidden; margin-top:.5rem; }
+-    .fill { height:100%; background: linear-gradient(90deg, #4dd8ff, #6ce98c); width:0; transition:.35s; }
+-    .attr { display:grid; grid-template-columns: repeat(2, 1fr); gap:.5rem; margin-top:.6rem; }
++    .stats { display:grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap:.55rem; }
++    .stat { background:#081233; border:1px solid rgba(255,255,255,.12); border-radius:10px; padding:.6rem; }
++    .stat small { display:block; color:var(--muted); }
++    .stat strong { font-size:1.06rem; }
++    .bar { width:100%; height:12px; border-radius:999px; background:#071129; border:1px solid rgba(255,255,255,.16); overflow:hidden; }
++    .fill { height:100%; width:0; transition:.35s; background: linear-gradient(90deg, #42b5ff, #75e39f); }
+     .quest {
+-      display:flex; justify-content:space-between; align-items:center; gap:.5rem;
+-      padding:.55rem .6rem; border-radius:10px; margin:.45rem 0; background:#0d1b42; border:1px solid rgba(255,255,255,.08);
++      display:flex; align-items:center; justify-content:space-between; gap:.4rem;
++      border:1px solid rgba(255,255,255,.14); border-radius:10px; padding:.55rem .6rem; margin:.45rem 0;
++      background:#0a1640;
+     }
+-    .system-log {
+-      margin-top: .9rem;
+-      border: 1px solid rgba(77,216,255,.28);
+-      border-radius: 12px;
+-      background: #091434;
+-      padding: .7rem;
+-      max-height: 210px;
+-      overflow-y: auto;
++    .quest.locked { opacity: .6; }
++    .quest .txt { font-size:.92rem; }
++    button {
++      border:0; border-radius:9px; padding:.45rem .72rem; color:#fff; cursor:pointer; font-weight:700;
++      background: linear-gradient(120deg, #2f65ff, #3bb7ff);
+     }
+-    .msg {
+-      margin: .35rem 0;
+-      font-size: .9rem;
+-      color: #bde6ff;
+-      border-left: 3px solid #4dd8ff;
+-      padding-left: .45rem;
++    button[disabled]{opacity:.45; cursor:not-allowed;}
++    .log { margin-top:.7rem; border:1px solid var(--line); border-radius:12px; max-height:220px; overflow:auto; padding:.55rem; background:#071231; }
++    .msg { margin:.28rem 0; border-left:3px solid var(--cyan); padding-left:.45rem; color:#b7e9ff; font-size:.9rem; }
++
++    .overlay {
++      position: fixed; inset: 0; background: rgba(4,9,25,.85);
++      display:flex; align-items:center; justify-content:center; z-index: 1000;
+     }
+-    button {
+-      background: linear-gradient(120deg, #2f76ff, #35b7ff);
+-      color:#fff; border:0; border-radius:10px; padding:.48rem .75rem; font-weight:700; cursor:pointer;
++    .start-box {
++      width:min(520px, 92vw); background: linear-gradient(180deg, #101d4a, #091535);
++      border:1px solid var(--line); border-radius:16px; padding:1rem;
++      box-shadow: 0 24px 80px rgba(0,0,0,.55), inset 0 0 30px rgba(66,142,255,.2);
++    }
++    .start-box h2 { margin-top:0; color: var(--gold); }
++    .field { margin:.55rem 0; }
++    .field label { display:block; margin-bottom:.25rem; color:#b7ccff; }
++    .field input {
++      width:100%; border-radius:9px; border:1px solid rgba(255,255,255,.2); background:#0b173f;
++      color:#fff; padding:.6rem;
++    }
++
++    .toast-wrap { position: fixed; top: 16px; right: 16px; z-index: 1200; display:flex; flex-direction:column; gap:.45rem; }
++    .toast {
++      min-width: 250px; max-width: 360px; padding:.65rem .75rem;
++      border-radius:10px; border:1px solid var(--line); background:#0a1640; color:#dff3ff;
++      box-shadow: 0 8px 24px rgba(0,0,0,.4);
++      animation: pop .28s ease;
++    }
++    .toast.rank { border-color: rgba(255,215,128,.6); background: linear-gradient(120deg, #2d1f59, #4c2a7b); }
++    @keyframes pop { from { transform: translateY(-8px); opacity:.3 } to { transform: translateY(0); opacity:1 } }
++
++    .rank-fx {
++      position: fixed; inset:0; display:none; align-items:center; justify-content:center; z-index:1300;
++      background: radial-gradient(circle, rgba(123,87,255,.28), rgba(2,7,22,.85));
+     }
+-    button[disabled] { opacity:.45; cursor:not-allowed; }
+-    .row { display:flex; align-items:center; justify-content:space-between; gap:.6rem; }
+-    .pill { padding:.2rem .5rem; border-radius:999px; font-size:.8rem; background:rgba(249,214,110,.16); color:var(--gold); border:1px solid rgba(249,214,110,.4); }
+-    dialog {
+-      border:none; border-radius:16px; padding:1.2rem; width:min(400px, 92vw);
+-      background:#08122f; color:#e9f8ff; box-shadow:0 30px 80px rgba(0,0,0,.6);
++    .rank-fx.show { display:flex; }
++    .rank-card {
++      text-align:center; width:min(640px,92vw); padding:1.3rem;
++      border:2px solid rgba(255,216,128,.8); border-radius:18px;
++      background: linear-gradient(120deg, rgba(20,24,63,.95), rgba(39,22,79,.95));
++      box-shadow: 0 0 38px rgba(197,157,255,.6);
++      animation: glow 1s infinite alternate;
+     }
+-    dialog::backdrop { background: rgba(3,7,20,.78); }
+-    @media (max-width: 820px) { .grid { grid-template-columns: 1fr; } .stats { grid-template-columns: repeat(2,1fr);} }
++    @keyframes glow { from{transform:scale(1)} to{transform:scale(1.02)} }
++    .rank-card h2 { margin:0; color:#ffd780; letter-spacing:.06em; }
++    .rank-card p { color:#f2e8ff; }
++
++    .pill { display:inline-block; margin-bottom:.45rem; padding:.2rem .5rem; border-radius:999px; border:1px solid rgba(255,255,255,.3); font-size:.78rem; color:var(--muted); }
++
++    @media (max-width: 860px){ .grid{grid-template-columns:1fr;} .stats{grid-template-columns:repeat(2,1fr);} }
+   </style>
+ </head>
+ <body>
+-  <div class="wrap">
+-    <h1 class="title">⚔️ Trading Leveling System — Solo Mode</h1>
++  <div class="overlay" id="startOverlay">
++    <div class="start-box">
++      <span class="pill">SYSTEM BOOT</span>
++      <h2>Bem-vindo ao Trading Hunter System ⚔️</h2>
++      <p style="color:#b9ccff">Insere o teu nome e capital inicial para receber tua classificação automática.</p>
++      <div class="field">
++        <label>Nome do caçador</label>
++        <input id="playerNameInput" type="text" placeholder="Ex: Isaac" />
++      </div>
++      <div class="field">
++        <label>Capital inicial (USD)</label>
++        <input id="capitalInput" type="number" min="10" step="1" placeholder="10" />
++      </div>
++      <button id="startBtn">Iniciar Sistema</button>
++    </div>
++  </div>
++
++  <div class="toast-wrap" id="toasts"></div>
++
++  <div class="rank-fx" id="rankFx">
++    <div class="rank-card">
++      <h2>👑 RANK UP!</h2>
++      <p id="rankFxText"></p>
++      <button onclick="document.getElementById('rankFx').classList.remove('show')">Continuar</button>
++    </div>
++  </div>
++
++  <main class="wrap">
++    <h1 class="title">Trading Leveling System — Solo Hunter Mode</h1>
+     <div class="grid">
+       <section class="card">
+-        <h2>📊 Status Panel</h2>
++        <h2>📊 Status</h2>
+         <div class="stats">
++          <div class="stat"><small>Caçador</small><strong id="playerName">-</strong></div>
+           <div class="stat"><small>Nível</small><strong id="level">1</strong></div>
+-          <div class="stat"><small>Capital</small><strong id="capital">$10</strong></div>
+-          <div class="stat"><small>Win Rate</small><strong id="wr">0%</strong></div>
+-          <div class="stat"><small>Wins na Semana</small><strong id="wins">0/5</strong></div>
+-          <div class="stat"><small>Semanas Completas</small><strong id="weeks">0</strong></div>
+           <div class="stat"><small>Rank Atual</small><strong id="rank">Rank E</strong></div>
++          <div class="stat"><small>Capital</small><strong id="capital">$10</strong></div>
++          <div class="stat"><small>Meta diária</small><strong id="goal">$2</strong></div>
++          <div class="stat"><small>Semanas completas</small><strong id="weeks">0</strong></div>
++        </div>
++        <div style="display:flex;justify-content:space-between;margin:.6rem 0 .35rem">
++          <span>EXP</span><span id="expTxt">0 / 100</span>
+         </div>
+-        <div class="row" style="margin-top:.7rem"><span>EXP</span><span id="expTxt">0 / 100</span></div>
+         <div class="bar"><div class="fill" id="expFill"></div></div>
+-
+-        <h3>💪 Atributos</h3>
+-        <div class="attr" id="attr"></div>
+       </section>
+ 
+       <section class="card">
+-        <div class="row"><h2>🎯 Quests Diárias</h2><span class="pill" id="goal">Meta: $2/dia</span></div>
++        <h2>🎯 Quest Info</h2>
++        <p style="margin-top:0;color:#b2ccff">Ordem obrigatória: só pode concluir a tarefa seguinte após a anterior.</p>
+         <div id="quests"></div>
+-        <p style="color:#9bc2ff">Complete os 5 dias da semana para subir de nível. Cada conclusão rende EXP.</p>
+-        <div>
+-          <h3>📢 Mensagens do Sistema</h3>
+-          <div class="system-log" id="sysLog"></div>
+-        </div>
+         <button id="reset">Resetar progresso</button>
+       </section>
+     </div>
+-  </div>
+ 
+-  <dialog id="levelUp">
+-    <h2>⬆️ LEVEL UP!</h2>
+-    <p id="levelUpMsg"></p>
+-    <button onclick="document.getElementById('levelUp').close()">Continuar</button>
+-  </dialog>
++    <section class="card" style="margin-top:.9rem">
++      <h3>📢 Sistema de Notificações</h3>
++      <div class="log" id="sysLog"></div>
++    </section>
++  </main>
+ 
+   <script>
+-    const STORAGE = "solo_trading_rpg_v1";
++    const STORAGE = "solo_trading_rpg_v2";
+     const ranks = ["Rank E","Rank D","Rank C","Rank B","Rank A","Rank S","Rank Nacional"];
+     const baseCapital = 10;
++    const questsLabels = [
++      "Validar setup do dia",
++      "Executar operação com risco controlado",
++      "Registrar entrada e saída",
++      "Fechar com disciplina emocional",
++      "Concluir revisão e lição do dia"
++    ];
+ 
+     const defaultState = {
++      started: false,
++      playerName: "",
++      startCapital: 10,
+       level: 1,
+       exp: 0,
+       expToNext: 100,
+       winsWeek: 0,
+-      totalWins: 0,
+-      totalDays: 0,
+       weeksDone: 0,
+-      attrs: { STR: 1, INT: 1, AGI: 1, VIT: 1 },
+       questsDone: [false, false, false, false, false],
+-      messages: [],
++      messages: []
+     };
+ 
+-    const state = JSON.parse(localStorage.getItem(STORAGE) || "null") || defaultState;
++    const saved = JSON.parse(localStorage.getItem(STORAGE) || "null") || {};
++    const state = { ...defaultState, ...saved };
++    state.messages = Array.isArray(state.messages) ? state.messages : [];
+ 
+-    const $ = (id) => document.getElementById(id);
+-
+-    function capitalForLevel(level) { return baseCapital * Math.pow(2, level - 1); }
+-    function goalForLevel(level) { return Math.round(capitalForLevel(level) * 0.2); }
+-    function currentRank(level) { return ranks[Math.min(ranks.length - 1, Math.floor((level - 1) / 4))]; }
++    const $ = id => document.getElementById(id);
+ 
++    function levelFromCapital(capital){
++      return Math.max(1, Math.floor(Math.log2(Math.max(capital, baseCapital) / baseCapital)) + 1);
++    }
++    function expForLevel(level){
++      let need = 100;
++      for(let i=1;i<level;i++) need = Math.round(need * 1.2);
++      return need;
++    }
++    function rankIndex(level){ return Math.min(ranks.length - 1, Math.floor((level - 1) / 4)); }
++    function rankOf(level){ return ranks[rankIndex(level)]; }
++    function capitalForLevel(level){ return baseCapital * Math.pow(2, level - 1); }
++    function goalForLevel(level){ return Math.round(capitalForLevel(level) * 0.2); }
+     function persist(){ localStorage.setItem(STORAGE, JSON.stringify(state)); }
+ 
+-    function randomMessage(kind){
+-      const map = {
+-        quest: [
+-          "Missão diária concluída! Continua firme, caçador.",
+-          "Excelente execução! Disciplina gera evolução.",
+-          "Objetivo diário cumprido. Mantém o foco!"
+-        ],
+-        week: [
+-          "Semana perfeita! Você dominou este nível.",
+-          "Parabéns! 5/5 tarefas concluídas com sucesso.",
+-          "Grande consistência! O sistema reconhece sua evolução."
+-        ],
+-        level: [
+-          "Subida de nível confirmada! Você está mais forte.",
+-          "Parabéns, caçador! Novo nível desbloqueado.",
+-          "Evolução concluída! Continue até o Rank Nacional."
+-        ]
++    function playTone(type="normal"){
++      const ctx = new (window.AudioContext || window.webkitAudioContext)();
++      const makeBeep = (freq, when, dur=.12, gain=.04) => {
++        const o = ctx.createOscillator(); const g = ctx.createGain();
++        o.type = "sine"; o.frequency.value = freq;
++        g.gain.value = gain;
++        o.connect(g); g.connect(ctx.destination);
++        o.start(ctx.currentTime + when); o.stop(ctx.currentTime + when + dur);
+       };
+-      const options = map[kind] || ["Sistema atualizado com sucesso."];
+-      return options[Math.floor(Math.random() * options.length)];
++      if(type === "rank"){
++        makeBeep(520,0,.14,.06); makeBeep(660,.16,.14,.06); makeBeep(880,.32,.22,.07);
++      } else {
++        makeBeep(700,0,.08,.05); makeBeep(920,.1,.08,.05);
++      }
++    }
++
++    function toast(msg, kind="normal"){
++      const t = document.createElement("div");
++      t.className = `toast ${kind === "rank" ? "rank" : ""}`;
++      t.textContent = msg;
++      $("toasts").appendChild(t);
++      setTimeout(() => t.remove(), 4200);
++      playTone(kind === "rank" ? "rank" : "normal");
+     }
+ 
+-    function addMessage(text){
+-      state.messages = state.messages || [];
+-      state.messages.unshift(`[${new Date().toLocaleTimeString("pt-BR", {hour: "2-digit", minute: "2-digit"})}] ${text}`);
+-      state.messages = state.messages.slice(0, 20);
++    function addMessage(msg){
++      const full = `[${new Date().toLocaleTimeString("pt-BR", {hour:"2-digit", minute:"2-digit"})}] ${msg}`;
++      state.messages.unshift(full);
++      state.messages = state.messages.slice(0, 25);
+     }
+ 
+-    function gainExp(n){
+-      state.exp += n;
+-      while (state.exp >= state.expToNext) {
++    function showRankCelebration(oldRank, newRank){
++      $("rankFxText").textContent = `Parabéns ${state.playerName}! Você subiu de ${oldRank} para ${newRank}. Continue assim, Caçador!`;
++      $("rankFx").classList.add("show");
++      toast(`👑 SUBIDA DE RANK! ${oldRank} → ${newRank}`, "rank");
++      addMessage(`👑 Subida de RANK: ${oldRank} → ${newRank}. Celebração máxima ativada.`);
++    }
++
++    function gainExp(amount){
++      state.exp += amount;
++      while(state.exp >= state.expToNext){
+         state.exp -= state.expToNext;
++        const oldRank = rankOf(state.level);
+         state.level += 1;
+         state.expToNext = Math.round(state.expToNext * 1.2);
+-        Object.keys(state.attrs).forEach(k => state.attrs[k] += 1);
+-        addMessage(`⬆️ ${randomMessage("level")} Agora você está no nível ${state.level}.`);
+-        showLevelUp();
++        const newRank = rankOf(state.level);
++
++        if(newRank !== oldRank){
++          showRankCelebration(oldRank, newRank);
++        } else {
++          toast(`⬆️ Subiu para o subnível ${state.level}! Excelente evolução!`);
++          addMessage(`⬆️ Subida de subnível para ${state.level}. Você está evoluindo com consistência.`);
++        }
+       }
+     }
+ 
+-    function completeQuest(dayIdx){
+-      if (state.questsDone[dayIdx]) return;
+-      state.questsDone[dayIdx] = true;
++    function canComplete(index){
++      if(index === 0) return true;
++      return state.questsDone[index - 1] === true;
++    }
++
++    function completeQuest(index){
++      if(state.questsDone[index]) return;
++      if(!canComplete(index)){
++        toast(`⚠️ Complete a tarefa ${index} primeiro. Ordem obrigatória.`, "normal");
++        addMessage(`Tentativa bloqueada: tarefa ${index + 1} sem concluir a anterior.`);
++        persist(); render();
++        return;
++      }
++
++      state.questsDone[index] = true;
+       state.winsWeek += 1;
+-      state.totalWins += 1;
+-      state.totalDays += 1;
+-      addMessage(`✅ Dia ${dayIdx + 1} concluído. ${randomMessage("quest")}`);
+       gainExp(20 + state.level * 3);
+ 
+-      if (state.winsWeek >= 5) {
++      const praise = [
++        "Missão concluída com sucesso!",
++        "Excelente disciplina, continue assim!",
++        "Parabéns! Você está no caminho certo."
++      ][Math.floor(Math.random() * 3)];
++
++      toast(`✅ Tarefa ${index + 1} concluída. ${praise}`);
++      addMessage(`✅ Tarefa ${index + 1} concluída. ${praise}`);
++
++      if(state.winsWeek >= 5){
+         state.weeksDone += 1;
+         state.winsWeek = 0;
+         state.questsDone = [false, false, false, false, false];
+-        addMessage(`🏆 ${randomMessage("week")} Próximo desafio: ${currentRank(state.level)}.`);
+         gainExp(40);
++        toast("🏆 Semana finalizada! Nova semana iniciada.");
++        addMessage("🏆 Semana completa (5/5). Sistema recompensou com EXP bônus.");
+       }
++
+       persist();
+       render();
+     }
+ 
+-    function showLevelUp(){
+-      $("levelUpMsg").textContent = `Você alcançou o nível ${state.level}. Todos os atributos +1!`;
+-      $("levelUp").showModal();
+-    }
+-
+     function renderQuests(){
+       const el = $("quests");
+       el.innerHTML = "";
+-      for (let i=0;i<5;i++) {
+-        const row = document.createElement("div");
+-        row.className = "quest";
++      questsLabels.forEach((q, i) => {
+         const done = state.questsDone[i];
+-        row.innerHTML = `<div>Dia ${i+1} ${done ? "✅" : "🟦"}</div>`;
+-        const btn = document.createElement("button");
+-        btn.textContent = done ? "Concluído" : "Completar";
+-        btn.disabled = done;
+-        btn.onclick = () => completeQuest(i);
+-        row.appendChild(btn);
++        const unlocked = canComplete(i);
++        const row = document.createElement("div");
++        row.className = `quest ${!unlocked && !done ? "locked" : ""}`;
++        row.innerHTML = `<div class="txt">${done ? "✅" : unlocked ? "🟦" : "🔒"} Tarefa ${i+1}: ${q}</div>`;
++        const b = document.createElement("button");
++        b.textContent = done ? "Concluída" : "Completar";
++        b.disabled = done || !unlocked;
++        b.onclick = () => completeQuest(i);
++        row.appendChild(b);
+         el.appendChild(row);
+-      }
+-    }
+-
+-    function renderAttrs(){
+-      const el = $("attr");
+-      el.innerHTML = Object.entries(state.attrs).map(([k,v]) =>
+-        `<div class="stat"><small>${k}</small><strong>${v}</strong></div>`).join("");
++      });
+     }
+ 
+     function render(){
++      $("playerName").textContent = state.playerName || "-";
+       $("level").textContent = state.level;
++      $("rank").textContent = rankOf(state.level);
+       $("capital").textContent = `$${capitalForLevel(state.level).toLocaleString("pt-BR")}`;
+-      const wr = state.totalDays ? Math.round((state.totalWins/state.totalDays)*100) : 0;
+-      $("wr").textContent = `${wr}%`;
+-      $("wins").textContent = `${state.winsWeek}/5`;
++      $("goal").textContent = `$${goalForLevel(state.level).toLocaleString("pt-BR")}`;
+       $("weeks").textContent = state.weeksDone;
+-      $("rank").textContent = currentRank(state.level);
+-      $("goal").textContent = `Meta: $${goalForLevel(state.level)}/dia`;
+       $("expTxt").textContent = `${state.exp} / ${state.expToNext}`;
+       $("expFill").style.width = `${(state.exp / state.expToNext) * 100}%`;
+-      renderAttrs();
+       renderQuests();
+-      const log = $("sysLog");
+-      const msgs = (state.messages && state.messages.length) ? state.messages : ["[Sistema] Bem-vindo! Complete as tarefas para evoluir no ranking."];
+-      log.innerHTML = msgs.map(m => `<div class="msg">${m}</div>`).join("");
++      const msgs = state.messages.length ? state.messages : ["[Sistema] Bem-vindo. Inicie as tarefas para evoluir."];
++      $("sysLog").innerHTML = msgs.map(m => `<div class="msg">${m}</div>`).join("");
++    }
++
++    function startGame(){
++      const name = $("playerNameInput").value.trim();
++      const capital = Number($("capitalInput").value || 0);
++      if(!name){ toast("Informe o teu nome para iniciar."); return; }
++      if(!capital || capital < 10){ toast("Capital mínimo para iniciar é $10."); return; }
++
++      const lvl = levelFromCapital(capital);
++      state.started = true;
++      state.playerName = name;
++      state.startCapital = capital;
++      state.level = lvl;
++      state.exp = 0;
++      state.expToNext = expForLevel(lvl);
++      state.winsWeek = 0;
++      state.weeksDone = 0;
++      state.questsDone = [false, false, false, false, false];
++      state.messages = [];
++
++      toast(`Bem-vindo ${name}! Classificação inicial: ${rankOf(lvl)} (Nível ${lvl}).`, "rank");
++      addMessage(`Sistema iniciado para ${name} com capital inicial $${capital}. Classificação: ${rankOf(lvl)}.`);
++      persist();
++      render();
++      $("startOverlay").style.display = "none";
+     }
+ 
++    $("startBtn").onclick = startGame;
+     $("reset").onclick = () => {
+-      if (!confirm("Tem certeza que deseja apagar o progresso?")) return;
++      if(!confirm("Deseja resetar todo o progresso?")) return;
+       localStorage.removeItem(STORAGE);
+       location.reload();
+     };
+ 
+-    render();
++    if(state.started){
++      $("startOverlay").style.display = "none";
++      render();
++    }
+   </script>
+ </body>
+ </html>

@@ -24,7 +24,15 @@
   <div class="sheet" id="sheet"></div>
 
   <script>
-    const months = ["MAIO","JUNHO","JULHO","AGOSTO","SETEMBRO","OUTUBRO","NOVEMBRO","DEZEMBRO"];
+    const ranks = [
+      { name: "RANK E", code: "E" },
+      { name: "RANK D", code: "D" },
+      { name: "RANK C", code: "C" },
+      { name: "RANK B", code: "B" },
+      { name: "RANK A", code: "A" },
+      { name: "RANK S", code: "S" },
+      { name: "RANK NACIONAL", code: "N" }
+    ];
 
     function bank(level){ return 10 * Math.pow(2, level - 1); }
     function goal(level){ return Math.round(bank(level) * 0.2); }
@@ -32,10 +40,10 @@
     const tabs = document.getElementById("tabs");
     const sheet = document.getElementById("sheet");
 
-    months.forEach((m, idx) => {
+    ranks.forEach((rank, idx) => {
       const btn = document.createElement("button");
       btn.className = "tab" + (idx===0 ? " active" : "");
-      btn.textContent = m;
+      btn.textContent = rank.name;
       btn.onclick = () => selectMonth(idx);
       tabs.appendChild(btn);
 
@@ -43,11 +51,12 @@
       section.className = "month" + (idx===0 ? " active" : "");
 
       const baseLevel = idx * 4 + 1;
-      let html = `<h2>DIÁRIO SIMPLIFICADO - ${m}</h2>`;
+      let html = `<h2>DIÁRIO SIMPLIFICADO - ${rank.name}</h2>`;
       html += `<table><thead><tr><th>DIA</th><th>DATA</th><th>ATIVO</th><th>ENTRADA</th><th>SAÍDA</th><th>WIN/LOSS</th><th>P/L</th></tr></thead><tbody>`;
       for (let w=0; w<4; w++) {
         const level = baseLevel + w;
-        html += `<tr class="week"><td colspan="7">SEMANA ${w+1} - NÍVEL ${level} | Banca: $${bank(level).toLocaleString('pt-BR')} | Meta: $${goal(level)}</td></tr>`;
+        const rankLevel = `${rank.code}${w + 1}`;
+        html += `<tr class="week"><td colspan="7">SEMANA ${w+1} - NÍVEL ${rankLevel} | Banca: $${bank(level).toLocaleString('pt-BR')} | Meta: $${goal(level)}</td></tr>`;
         for (let d=1; d<=5; d++) {
           html += `<tr><td>DIA ${d}</td><td></td><td></td><td></td><td></td><td></td><td></td></tr>`;
         }

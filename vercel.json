@@ -3,7 +3,14 @@
   "rewrites": [
     { "source": "/", "destination": "/index.html" },
     { "source": "/trading", "destination": "/Trading_Leveling_System.html" },
+    { "source": "/trading/:path*", "destination": "/Trading_Leveling_System.html" },
     { "source": "/diario", "destination": "/Diario_Simplificado_Vitorias.html" },
     { "source": "/guia", "destination": "/Guia_Preenchimento_Diario.md" }
+    { "source": "/diario-simplificado", "destination": "/Diario_Simplificado_Vitorias.html" },
+    { "source": "/guia", "destination": "/Guia_Preenchimento_Diario.html" },
+    { "source": "/guia-de-pensamento", "destination": "/Guia_Preenchimento_Diario.html" },
+    { "source": "/Guia_Preenchimento_Diario", "destination": "/Guia_Preenchimento_Diario.html" },
+    { "source": "/Guia_Preenchimento_Diario.md", "destination": "/Guia_Preenchimento_Diario.md" },
+    { "source": "/Guia_Preenchimento_Diario.html", "destination": "/Guia_Preenchimento_Diario.html" }
   ]
 }

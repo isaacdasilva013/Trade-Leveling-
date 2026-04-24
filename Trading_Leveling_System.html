@@ -1,24 +1,4 @@
-<!doctype html>
-<html lang="pt-BR">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Trading Leveling System</title>
-  <style>
-    :root {
-      --bg: #060b1f;
-      --panel: #0d1738;
-      --card: #101f49;
-      --neon: #4dd8ff;
-      --gold: #f9d66e;
-      --ok: #6ce98c;
-      --danger: #ff6b8a;
-      --text: #e8f1ff;
-    }
-    * { box-sizing: border-box; }
-    body {
-      margin: 0;
-      font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+@@ -22,185 +22,240 @@
       background: radial-gradient(circle at top, #11245f 0%, var(--bg) 45%);
       color: var(--text);
       min-height: 100vh;
@@ -43,6 +23,22 @@
     .quest {
       display:flex; justify-content:space-between; align-items:center; gap:.5rem;
       padding:.55rem .6rem; border-radius:10px; margin:.45rem 0; background:#0d1b42; border:1px solid rgba(255,255,255,.08);
+    }
+    .system-log {
+      margin-top: .9rem;
+      border: 1px solid rgba(77,216,255,.28);
+      border-radius: 12px;
+      background: #091434;
+      padding: .7rem;
+      max-height: 210px;
+      overflow-y: auto;
+    }
+    .msg {
+      margin: .35rem 0;
+      font-size: .9rem;
+      color: #bde6ff;
+      border-left: 3px solid #4dd8ff;
+      padding-left: .45rem;
     }
     button {
       background: linear-gradient(120deg, #2f76ff, #35b7ff);
@@ -71,7 +67,7 @@
           <div class="stat"><small>Win Rate</small><strong id="wr">0%</strong></div>
           <div class="stat"><small>Wins na Semana</small><strong id="wins">0/5</strong></div>
           <div class="stat"><small>Semanas Completas</small><strong id="weeks">0</strong></div>
-          <div class="stat"><small>Mês Atual</small><strong id="month">Maio</strong></div>
+          <div class="stat"><small>Rank Atual</small><strong id="rank">Rank E</strong></div>
         </div>
         <div class="row" style="margin-top:.7rem"><span>EXP</span><span id="expTxt">0 / 100</span></div>
         <div class="bar"><div class="fill" id="expFill"></div></div>
@@ -84,6 +80,10 @@
         <div class="row"><h2>🎯 Quests Diárias</h2><span class="pill" id="goal">Meta: $2/dia</span></div>
         <div id="quests"></div>
         <p style="color:#9bc2ff">Complete os 5 dias da semana para subir de nível. Cada conclusão rende EXP.</p>
+        <div>
+          <h3>📢 Mensagens do Sistema</h3>
+          <div class="system-log" id="sysLog"></div>
+        </div>
         <button id="reset">Resetar progresso</button>
       </section>
     </div>
@@ -97,7 +97,7 @@
 
   <script>
     const STORAGE = "solo_trading_rpg_v1";
-    const months = ["Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
+    const ranks = ["Rank E","Rank D","Rank C","Rank B","Rank A","Rank S","Rank Nacional"];
     const baseCapital = 10;
 
     const defaultState = {
@@ -110,6 +110,7 @@
       weeksDone: 0,
       attrs: { STR: 1, INT: 1, AGI: 1, VIT: 1 },
       questsDone: [false, false, false, false, false],
+      messages: [],
     };
 
     const state = JSON.parse(localStorage.getItem(STORAGE) || "null") || defaultState;
@@ -118,9 +119,37 @@
 
     function capitalForLevel(level) { return baseCapital * Math.pow(2, level - 1); }
     function goalForLevel(level) { return Math.round(capitalForLevel(level) * 0.2); }
-    function currentMonth(level) { return months[Math.min(7, Math.floor((level - 1) / 4))]; }
+    function currentRank(level) { return ranks[Math.min(ranks.length - 1, Math.floor((level - 1) / 4))]; }
 
     function persist(){ localStorage.setItem(STORAGE, JSON.stringify(state)); }
+
+    function randomMessage(kind){
+      const map = {
+        quest: [
+          "Missão diária concluída! Continua firme, caçador.",
+          "Excelente execução! Disciplina gera evolução.",
+          "Objetivo diário cumprido. Mantém o foco!"
+        ],
+        week: [
+          "Semana perfeita! Você dominou este nível.",
+          "Parabéns! 5/5 tarefas concluídas com sucesso.",
+          "Grande consistência! O sistema reconhece sua evolução."
+        ],
+        level: [
+          "Subida de nível confirmada! Você está mais forte.",
+          "Parabéns, caçador! Novo nível desbloqueado.",
+          "Evolução concluída! Continue até o Rank Nacional."
+        ]
+      };
+      const options = map[kind] || ["Sistema atualizado com sucesso."];
+      return options[Math.floor(Math.random() * options.length)];
+    }
+
+    function addMessage(text){
+      state.messages = state.messages || [];
+      state.messages.unshift(`[${new Date().toLocaleTimeString("pt-BR", {hour: "2-digit", minute: "2-digit"})}] ${text}`);
+      state.messages = state.messages.slice(0, 20);
+    }
 
     function gainExp(n){
       state.exp += n;
@@ -129,6 +158,7 @@
         state.level += 1;
         state.expToNext = Math.round(state.expToNext * 1.2);
         Object.keys(state.attrs).forEach(k => state.attrs[k] += 1);
+        addMessage(`⬆️ ${randomMessage("level")} Agora você está no nível ${state.level}.`);
         showLevelUp();
       }
     }
@@ -139,12 +169,14 @@
       state.winsWeek += 1;
       state.totalWins += 1;
       state.totalDays += 1;
+      addMessage(`✅ Dia ${dayIdx + 1} concluído. ${randomMessage("quest")}`);
       gainExp(20 + state.level * 3);
 
       if (state.winsWeek >= 5) {
         state.weeksDone += 1;
         state.winsWeek = 0;
         state.questsDone = [false, false, false, false, false];
+        addMessage(`🏆 ${randomMessage("week")} Próximo desafio: ${currentRank(state.level)}.`);
         gainExp(40);
       }
       persist();
@@ -186,12 +218,15 @@
       $("wr").textContent = `${wr}%`;
       $("wins").textContent = `${state.winsWeek}/5`;
       $("weeks").textContent = state.weeksDone;
-      $("month").textContent = currentMonth(state.level);
+      $("rank").textContent = currentRank(state.level);
       $("goal").textContent = `Meta: $${goalForLevel(state.level)}/dia`;
       $("expTxt").textContent = `${state.exp} / ${state.expToNext}`;
       $("expFill").style.width = `${(state.exp / state.expToNext) * 100}%`;
       renderAttrs();
       renderQuests();
+      const log = $("sysLog");
+      const msgs = (state.messages && state.messages.length) ? state.messages : ["[Sistema] Bem-vindo! Complete as tarefas para evoluir no ranking."];
+      log.innerHTML = msgs.map(m => `<div class="msg">${m}</div>`).join("");
     }
 
     $("reset").onclick = () => {

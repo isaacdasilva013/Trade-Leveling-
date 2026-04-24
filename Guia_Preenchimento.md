@@ -2,21 +2,22 @@
 
 ## Como usar o diário
 
-Este diário foi estruturado para **8 meses (Maio a Dezembro)** com evolução por níveis semanais.
-Cada mês possui **4 níveis (4 semanas)** e cada nível contém **5 dias de operação**.
+Este diário foi estruturado em **7 ranks** com evolução por níveis semanais:
+**Rank E, D, C, B, A, S e Rank Nacional**.
+Cada rank possui **4 níveis (4 semanas)** e cada nível contém **5 dias de operação**.
 
 ---
 
-## 📋 Estrutura por mês
+## 📋 Estrutura por rank
 
-Exemplo para **Maio**:
+Exemplo para **Rank E**:
 
 - **Semana 1 | Nível 1 | Banca: $10 | Meta diária: $2**
 - **Semana 2 | Nível 2 | Banca: $20 | Meta diária: $4**
 - **Semana 3 | Nível 3 | Banca: $40 | Meta diária: $8**
 - **Semana 4 | Nível 4 | Banca: $80 | Meta diária: $16**
 
-A mesma lógica continua até Dezembro, dobrando a banca a cada nível.
+A mesma lógica continua rank por rank, dobrando a banca a cada nível.
 
 ---
 
